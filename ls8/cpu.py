@@ -3,18 +3,14 @@
 import sys
 
 class CPU:
-    """Main CPU class."""
 
     def __init__(self):
-        """Construct a new CPU."""
-        pass
+        self.ram = [0] * 256
+        self.reg = [0] * 8
+        self.pc = None
 
     def load(self):
-        """Load a program into memory."""
-
         address = 0
-
-        # For now, we've just hardcoded a program:
 
         program = [
             # From print8.ls8
