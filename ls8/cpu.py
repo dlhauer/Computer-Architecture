@@ -69,13 +69,7 @@ class CPU:
             IR = self.ram_read(self.pc)
             operand_a = self.ram_read(self.pc+1)
             operand_b = self.ram_read(self.pc+2)
-            
-            ir_str = f"{IR:b}"
-            if len(ir_str) < 7:
-                op_count = 0
-            else:
-                op_count = int(ir_str[:-6], 2)
-
+            op_count = IR >> 6
 
             if IR == self.instructions['LDI']:
                 self.reg[operand_a] = operand_b
