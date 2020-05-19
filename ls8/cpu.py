@@ -1,18 +1,17 @@
 
 import sys
 
+LDI = 0b10000010
+PRN = 0b01000111
+HLT = 0b00000001
+MUL = 0b10100010
+
 class CPU:
 
     def __init__(self):
         self.ram = [0] * 256
         self.reg = [0] * 8
         self.pc = 0
-        self.instructions = {
-            'LDI': 0b10000010,
-            'PRN': 0b01000111,
-            'HLT': 0b00000001,
-            'MUL': 0b10100010
-        }
 
     def load(self):
         address = 0
@@ -71,13 +70,13 @@ class CPU:
             operand_b = self.ram_read(self.pc+2)
             op_count = IR >> 6
 
-            if IR == self.instructions['LDI']:
+            if IR == LDI:
                 self.reg[operand_a] = operand_b
-            elif IR == self.instructions['PRN']:
+            elif IR == PRN:
                 print(self.reg[operand_a])
-            elif IR == self.instructions['MUL']:
+            elif IR == MUL:
                 self.alu('MUL', operand_a, operand_b)
-            elif IR == self.instructions['HLT']:
+            elif IR == HLT:
                 halted = True
             
             self.pc += op_count+1
