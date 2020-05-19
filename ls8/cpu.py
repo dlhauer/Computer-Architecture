@@ -12,6 +12,12 @@ class CPU:
         self.ram = [0] * 256
         self.reg = [0] * 8
         self.pc = 0
+        self.branch_table = {
+            LDI: self.handle_ldi,
+            PRN: self.handle_prn,
+            MUL: self.handle_mul,
+            HLT: self.handle_hlt
+        }
 
     def load(self):
         address = 0
@@ -23,6 +29,18 @@ class CPU:
         for instruction in program:
             self.ram_write(instruction, address)
             address += 1
+
+    def handle_ldi(self, reg, val):
+        self.reg[reg] = val
+
+    def handle_prn(self, reg, *args):
+        print(self.reg[reg])
+
+    def handle_mul(self, reg_a, reg_b):
+        self.reg[reg_a] *= self.reg[reg_b]
+
+    def handle_hlt(self, *args):
+        exit()
 
     def ram_read(self, MAR):
         return self.ram[MAR]
@@ -58,8 +76,6 @@ class CPU:
         for i in range(8):
             print(" %02X" % self.reg[i], end='')
 
-        print()
-
     def run(self):
         self.pc = 0
         halted = False
@@ -70,14 +86,7 @@ class CPU:
             operand_b = self.ram_read(self.pc+2)
             op_count = IR >> 6
 
-            if IR == LDI:
-                self.reg[operand_a] = operand_b
-            elif IR == PRN:
-                print(self.reg[operand_a])
-            elif IR == MUL:
-                self.alu('MUL', operand_a, operand_b)
-            elif IR == HLT:
-                halted = True
+            self.branch_table[IR](operand_a, operand_b)
             
             self.pc += op_count+1
         
