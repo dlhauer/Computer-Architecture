@@ -31,6 +31,7 @@ class CPU:
         self.reg = [0] * 8
         self.reg[SP] = 0xF4 # Initialize stack pointer.
         self.pc = 0
+        self.fl = 0
         self.branch_table = {
             LDI:  self.handle_ldi,
             PRN:  self.handle_prn,
@@ -92,14 +93,43 @@ class CPU:
         self.ram[MAR] = MDR
 
     def alu(self, op, reg_a, reg_b):
-        """ALU operations."""
+        val_a = self.reg[reg_a]
+        val_b = self.reg[reg_b] if reg_b < 8 else 0
 
-        if op == ADD:
-            self.reg[reg_a] += self.reg[reg_b]
-        elif op == MUL:
-            self.reg[reg_a] *= self.reg[reg_b]
+        switch = {
+            ADD: val_a + val_b,
+            AND: val_a & val_b,
+            DEC: val_a - 1,
+            DIV: val_a / val_b if val_b != 0 else None,
+            INC: val_a + 1,
+            MOD: val_a % val_b if val_b != 0 else None,
+            MUL: val_a * val_b,
+            NOT: ~val_a & 0xff,
+            OR:  val_a | val_b,
+            SHL: val_a << val_b,
+            SHR: val_a >> val_b,
+            SUB: val_a - val_b,
+            XOR: val_a ^ val_b
+        }
+
+        if op in switch:
+            val = switch[op]
+            if val is None:
+                print('Error: Attempted to divide by 0')
+                self.handle_hlt()
+            else:
+                self.reg[reg_a] = val
+        elif op == CMP:
+            if val_a < val_b:
+                self.fl = 0b100
+            elif val_a > val_b:
+                self.fl = 0b010
+            else:
+                self.fl = 0b001
+            print(self.fl)
         else:
             raise Exception("Unsupported ALU operation")
+            
 
     def trace(self):
         """
