@@ -4,13 +4,25 @@ import sys
 LDI  = 0b10000010
 PRN  = 0b01000111
 HLT  = 0b00000001
-MUL  = 0b10100010
-ADD  = 0b10100000
 PUSH = 0b01000101
 POP  = 0b01000110
 CALL = 0b01010000
 RET  = 0b00010001
 SP   = 7
+ADD  = 0b0000
+AND  = 0b1000
+CMP  = 0b0111
+DEC  = 0b0110
+DIV  = 0b0011
+INC  = 0b0101
+MOD  = 0b0100
+MUL  = 0b0010
+NOT  = 0b1001
+OR   = 0b1010
+SHL  = 0b1100
+SHR  = 0b1101
+SUB  = 0b0001
+XOR  = 0b1011
 
 class CPU:
 
@@ -22,8 +34,6 @@ class CPU:
         self.branch_table = {
             LDI:  self.handle_ldi,
             PRN:  self.handle_prn,
-            ADD:  self.handle_add,
-            MUL:  self.handle_mul,
             HLT:  self.handle_hlt,
             PUSH: self.handle_push,
             POP:  self.handle_pop,
@@ -47,12 +57,6 @@ class CPU:
 
     def handle_prn(self, reg, *args):
         print(self.reg[reg])
-
-    def handle_add(self, reg_a, reg_b):
-        self.alu('ADD', reg_a, reg_b)
-
-    def handle_mul(self, reg_a, reg_b):
-        self.alu('MUL', reg_a, reg_b)
 
     def handle_hlt(self, *args):
         exit()
@@ -90,9 +94,9 @@ class CPU:
     def alu(self, op, reg_a, reg_b):
         """ALU operations."""
 
-        if op == "ADD":
+        if op == ADD:
             self.reg[reg_a] += self.reg[reg_b]
-        elif op == "MUL":
+        elif op == MUL:
             self.reg[reg_a] *= self.reg[reg_b]
         else:
             raise Exception("Unsupported ALU operation")
@@ -120,14 +124,19 @@ class CPU:
         halted = False
 
         while not halted:
-            IR        = self.ram_read(self.pc)
-            mutate_pc = (IR & 0b10000) >> 4
-            operand_a = self.ram_read(self.pc+1)
-            operand_b = self.ram_read(self.pc+2)
-            op_count  = IR >> 6
+            IR         = self.ram_read(self.pc)
+            op_count   = IR >> 6
+            is_alu_op  = (IR & 0b100000) >> 5
+            mutates_pc = (IR & 0b10000) >> 4
+            operand_a  = self.ram_read(self.pc+1)
+            operand_b  = self.ram_read(self.pc+2)
 
-            self.branch_table[IR](operand_a, operand_b)
+            if is_alu_op:
+                op = IR & 0b00001111
+                self.alu(op, operand_a, operand_b)
+            else:
+                self.branch_table[IR](operand_a, operand_b)
 
-            if not mutate_pc:
+            if not mutates_pc:
                 self.pc += op_count+1
         
