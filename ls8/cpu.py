@@ -5,8 +5,11 @@ LDI  = 0b10000010
 PRN  = 0b01000111
 HLT  = 0b00000001
 MUL  = 0b10100010
+ADD  = 0b10100000
 PUSH = 0b01000101
 POP  = 0b01000110
+CALL = 0b01010000
+RET  = 0b00010001
 SP   = 7
 
 class CPU:
@@ -15,15 +18,17 @@ class CPU:
         self.ram = [0] * 256
         self.reg = [0] * 8
         self.reg[SP] = 0xF4 # Initialize stack pointer.
-        # self.sp = self.reg[7]
         self.pc = 0
         self.branch_table = {
-            LDI: self.handle_ldi,
-            PRN: self.handle_prn,
-            MUL: self.handle_mul,
-            HLT: self.handle_hlt,
+            LDI:  self.handle_ldi,
+            PRN:  self.handle_prn,
+            ADD:  self.handle_add,
+            MUL:  self.handle_mul,
+            HLT:  self.handle_hlt,
             PUSH: self.handle_push,
-            POP: self.handle_pop
+            POP:  self.handle_pop,
+            CALL: self.handle_call,
+            RET:  self.handle_ret
         }
 
     def load(self):
@@ -43,22 +48,38 @@ class CPU:
     def handle_prn(self, reg, *args):
         print(self.reg[reg])
 
+    def handle_add(self, reg_a, reg_b):
+        self.alu('ADD', reg_a, reg_b)
+
     def handle_mul(self, reg_a, reg_b):
-        self.reg[reg_a] *= self.reg[reg_b]
+        self.alu('MUL', reg_a, reg_b)
 
     def handle_hlt(self, *args):
         exit()
 
-    def handle_push(self, reg, *args):
+    def handle_push(self, reg, call=None, *args):
         self.reg[SP] += 1
-        self.ram_write(self.reg[reg], self.reg[SP])
+        if call == True:
+            self.ram_write(reg, self.reg[SP])
+        else:
+            self.ram_write(self.reg[reg], self.reg[SP])
 
-    def handle_pop(self, reg, *args):
+    def handle_pop(self, reg=None, *args):
         if self.reg[SP] == 0xF4:
             return None
         val = self.ram_read(self.reg[SP])
         self.reg[SP] -= 1
-        self.reg[reg] = val
+        if reg is not None:
+            self.reg[reg] = val
+        else:
+            return val
+
+    def handle_call(self, reg, *args):
+        self.handle_push(self.pc+2, call=True)
+        self.pc = self.reg[reg]
+    
+    def handle_ret(self, *args):
+        self.pc = self.handle_pop()
 
     def ram_read(self, MAR):
         return self.ram[MAR]
@@ -99,12 +120,14 @@ class CPU:
         halted = False
 
         while not halted:
-            IR = self.ram_read(self.pc)
+            IR        = self.ram_read(self.pc)
+            mutate_pc = (IR & 0b10000) >> 4
             operand_a = self.ram_read(self.pc+1)
             operand_b = self.ram_read(self.pc+2)
-            op_count = IR >> 6
+            op_count  = IR >> 6
 
             self.branch_table[IR](operand_a, operand_b)
-            
-            self.pc += op_count+1
+
+            if not mutate_pc:
+                self.pc += op_count+1
         
