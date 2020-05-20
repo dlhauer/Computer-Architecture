@@ -1,22 +1,29 @@
 
 import sys
 
-LDI = 0b10000010
-PRN = 0b01000111
-HLT = 0b00000001
-MUL = 0b10100010
+LDI  = 0b10000010
+PRN  = 0b01000111
+HLT  = 0b00000001
+MUL  = 0b10100010
+PUSH = 0b01000101
+POP  = 0b01000110
+SP   = 7
 
 class CPU:
 
     def __init__(self):
         self.ram = [0] * 256
         self.reg = [0] * 8
+        self.reg[SP] = 0xF4 # Initialize stack pointer.
+        # self.sp = self.reg[7]
         self.pc = 0
         self.branch_table = {
             LDI: self.handle_ldi,
             PRN: self.handle_prn,
             MUL: self.handle_mul,
-            HLT: self.handle_hlt
+            HLT: self.handle_hlt,
+            PUSH: self.handle_push,
+            POP: self.handle_pop
         }
 
     def load(self):
@@ -41,6 +48,17 @@ class CPU:
 
     def handle_hlt(self, *args):
         exit()
+
+    def handle_push(self, reg, *args):
+        self.reg[SP] += 1
+        self.ram_write(self.reg[reg], self.reg[SP])
+
+    def handle_pop(self, reg, *args):
+        if self.reg[SP] == 0xF4:
+            return None
+        val = self.ram_read(self.reg[SP])
+        self.reg[SP] -= 1
+        self.reg[reg] = val
 
     def ram_read(self, MAR):
         return self.ram[MAR]
