@@ -8,6 +8,7 @@ PUSH = 0b01000101
 POP  = 0b01000110
 CALL = 0b01010000
 RET  = 0b00010001
+JMP  = 0b01010100
 SP   = 7
 ADD  = 0b0000
 AND  = 0b1000
@@ -39,7 +40,8 @@ class CPU:
             PUSH: self.handle_push,
             POP:  self.handle_pop,
             CALL: self.handle_call,
-            RET:  self.handle_ret
+            RET:  self.handle_ret,
+            JMP:  self.handle_jmp
         }
 
     def load(self):
@@ -85,6 +87,9 @@ class CPU:
     
     def handle_ret(self, *args):
         self.pc = self.handle_pop()
+
+    def handle_jmp(self, reg, *args):
+        self.pc = self.reg[reg]
 
     def ram_read(self, MAR):
         return self.ram[MAR]
