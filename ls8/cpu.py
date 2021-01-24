@@ -8,6 +8,9 @@ PUSH = 0b01000101
 POP  = 0b01000110
 CALL = 0b01010000
 RET  = 0b00010001
+JMP  = 0b01010100
+JEQ  = 0b01010101
+JNE  = 0b01010110
 SP   = 7
 ADD  = 0b0000
 AND  = 0b1000
@@ -39,7 +42,10 @@ class CPU:
             PUSH: self.handle_push,
             POP:  self.handle_pop,
             CALL: self.handle_call,
-            RET:  self.handle_ret
+            RET:  self.handle_ret,
+            JMP:  self.handle_jump,
+            JEQ:  self.handle_jump,
+            JNE:  self.handle_jump
         }
 
     def load(self):
@@ -53,7 +59,7 @@ class CPU:
             self.ram_write(instruction, address)
             address += 1
 
-    def handle_ldi(self, reg, val):
+    def handle_ldi(self, reg, val, *args):
         self.reg[reg] = val
 
     def handle_prn(self, reg, *args):
@@ -85,6 +91,22 @@ class CPU:
     
     def handle_ret(self, *args):
         self.pc = self.handle_pop()
+
+    def handle_jump(self, reg, _, IR):
+        
+        equal = self.fl & 0b00000001
+
+        if IR == JEQ and equal:
+            pass
+        elif IR == JNE and not equal:
+            pass
+        elif IR == JMP:
+            pass
+        else:
+            self.pc += 2
+            return
+
+        self.pc = self.reg[reg]
 
     def ram_read(self, MAR):
         return self.ram[MAR]
@@ -126,7 +148,6 @@ class CPU:
                 self.fl = 0b010
             else:
                 self.fl = 0b001
-            print(self.fl)
         else:
             raise Exception("Unsupported ALU operation")
             
@@ -165,7 +186,7 @@ class CPU:
                 op = IR & 0b00001111
                 self.alu(op, operand_a, operand_b)
             else:
-                self.branch_table[IR](operand_a, operand_b)
+                self.branch_table[IR](operand_a, operand_b, IR)
 
             if not mutates_pc:
                 self.pc += op_count+1
